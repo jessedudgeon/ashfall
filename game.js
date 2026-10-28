@@ -118,6 +118,7 @@ function drawEnemyUnits(){for(const u of state.combat.units.filter(u=>u.side==='
 }}
 function updateCombatHUD(){const c=state.combat,active=Boolean(c),play=c?.phase==='player';
  $('explorationActions').hidden=active||state.combatLost;$('combatActions').hidden=!active&&!state.combatLost;
+ $('combatSwitch').hidden=!active||state.combatLost;
  $('combatBanner').hidden=!active&&!state.combatLost;$('combatFeedback').hidden=!active&&!state.combatLost;
  $('explorationBriefing').hidden=active||state.combatLost;$('combatBriefing').hidden=!active&&!state.combatLost;
  $('modeTag').textContent=active?(play?'◈ TURN-BASED · PLAYER PHASE':c.phase==='enemy'?'⚠ ENEMY PHASE':'◈ COMBAT RESOLVED'):state.combatLost?'⚠ EXPEDITION LOST':'◈ REAL-TIME · PAUSE SPACE';
@@ -125,13 +126,18 @@ function updateCombatHUD(){const c=state.combat,active=Boolean(c),play=c?.phase=
  if(!active&&!state.combatLost)return;
  if(state.combatLost){$('roundCounter').textContent='SQUAD DEFEATED';$('combatHint').textContent='RESTART TO TRY AGAIN';$('combatEnd').textContent='↻ RESTART EXPEDITION';return;}
  $('roundCounter').textContent=c.phase==='won'?'SECTOR SECURED':`ROUND ${String(c.round).padStart(2,'0')} · ${play?'YOUR TURN':'ENEMY TURN'}`;
- $('combatHint').textContent='F FIRE · M MOVE · G AIM · H MEDKIT · ENTER END TURN';
+ $('combatHint').textContent='4 AP PER SURVIVOR · USE YOUR WHOLE SQUAD';
  const unit=battleUnit(),foe=activeUnit(c,state.targeted),shot=unit&&foe?calculateShot(world,unit,foe):null;
  $('combatTarget').textContent=foe&&isStanding(foe)?(shot?.ok?`${foe.name} · ${foe.hp}/${foe.maxHp} HP · ${shot.chance}% hit · ${shot.damage} damage · cover ${shot.cover}`:`${foe.name} · ${shot?.reason||'Invalid target'}`):'Select a raider to view hit chance and damage. Click a downed ally with MEDKIT selected to rescue them.';
  $('combatFeedback').textContent=`${unit?.name||'SURVIVOR'}: ${unit?.ap||0} AP | ${unit?.ammo||0} rounds | ${c.medkits} medical kits | ${state.combatMode.toUpperCase()} MODE`;
- for(const [mode,id] of [['move','combatMove'],['shoot','combatShoot'],['heal','combatHeal']])$(id).classList.toggle('active',state.combatMode===mode);
+ for(const [mode,id] of [['move','combatMove'],['shoot','combatShoot'],['heal','combatHeal']]){$(id).classList.toggle('active',state.combatMode===mode);$(id).setAttribute('aria-pressed',String(state.combatMode===mode));}
  for(const id of ['combatMove','combatShoot','combatAim','combatReload','combatHeal'])$(id).disabled=!play||!isStanding(unit)||unit.ap<=0;
+ $('combatShoot').disabled ||= unit.ap<2||unit.ammo<1;
+ $('combatAim').disabled ||= unit.aimed;
+ $('combatReload').disabled ||= unit.ammo>=unit.weapon.mag;
+ $('combatHeal').disabled ||= unit.ap<2||c.medkits<1;
  $('combatEnd').disabled=!play;
+ $('controlHint').textContent=unit.ap===0?'No AP left. Choose another survivor (Q / 1–3), or end your turn.':state.combatMode==='move'?'Move: click an open tile. Up to 3 tiles costs 1 AP.':state.combatMode==='heal'?'Medkit: click yourself or an adjacent ally. Costs 2 AP and 1 kit.':unit.ammo===0?'Magazine empty. Reload (L) before firing.':unit.ap<2?'Firing needs 2 AP. Move, reload, or choose another survivor.':'Fire: hover a raider to check hit chance, then click to shoot. Costs 2 AP.';
 }
 function setCombatMode(mode){if(!battling())return;state.combatMode=mode;updateHUD();}
 function afterCombatAction(result){announce(result.message);const enc=state.combat;if(result.ok){const outcome=battleResult(enc);if(outcome==='won'){endCombatVictory();return;}if(outcome==='lost'){endCombatLoss();return;}}updateHUD();}
@@ -174,12 +180,13 @@ function updateHUD(){
  $('squadList').querySelectorAll('button').forEach(b=>b.onclick=()=>selectHero(+b.dataset.index));
  $('selectedName').innerHTML=`${selected().name} <span>${selected().role}</span>`;
  $('coordinates').textContent=`GRID ${String(selected().x).padStart(2,'0')},${String(selected().y).padStart(2,'0')}`;
+ $('controlHint').textContent=state.paused?'Paused. Select Resume or press Space to continue.':'Click ground to move · Click gold markers to collect · Q / 1–3 selects survivors';
  $('scrap').textContent=state.scrap;$('intel').textContent=`${state.intel} / 1`;$('medkits').textContent=String(state.combat?.medkits??state.medkits).padStart(2,'0');
  const radio=world.sites.find(s=>s.id==='radio'),salvage=world.sites.filter(s=>s.type==='salvage');const found=Boolean(radio.claimed||radio.seen);
  const flags=[state.combatCleared,found,radio.claimed,salvage.some(s=>s.claimed)];
  [...$('objectives').children].forEach((el,i)=>el.classList.toggle('done',flags[i]));
- $('poiList').innerHTML=world.sites.map(s=>`<button class="poi ${s.claimed?'done':''}" data-site="${s.id}"><span class="poi-mark">${s.claimed?'✓':'◇'}</span><div><strong>${s.name}</strong><small>${s.claimed?'RECOVERED':`${Math.abs(s.x-selected().x)+Math.abs(s.y-selected().y)} tiles away`}</small></div></button>`).join('');
- $('poiList').querySelectorAll('button').forEach(b=>b.onclick=()=>{const site=world.sites.find(s=>s.id===b.dataset.site);if(site&&!site.claimed)approachSite(site);});
+ $('poiList').innerHTML=world.sites.map(s=>`<button class="poi ${s.claimed?'done':''}" ${state.combat?'disabled':''} data-site="${s.id}"><span class="poi-mark">${s.claimed?'✓':'◇'}</span><div><strong>${s.name}</strong><small>${s.claimed?'RECOVERED':`${Math.abs(s.x-selected().x)+Math.abs(s.y-selected().y)} tiles away`}</small></div></button>`).join('');
+ $('poiList').querySelectorAll('button').forEach(b=>b.onclick=()=>{const site=world.sites.find(s=>s.id===b.dataset.site);if(site&&!site.claimed&&!state.combat)approachSite(site);});
  $('investigate').disabled=!world.sites.some(s=>!s.claimed&&Math.abs(s.x-selected().x)+Math.abs(s.y-selected().y)<=1);
  $('pauseAction').innerHTML=state.paused?'<span>▶</span> RESUME <kbd>SPACE</kbd>':'<span>Ⅱ</span> PAUSE <kbd>SPACE</kbd>';
  $('zoomLabel').textContent=`${Math.round(state.zoom*100)}%`;
@@ -187,7 +194,7 @@ function updateHUD(){
 }
 function selectHero(i){if(i<0||i>=squad.length)return;if(state.combat){const u=battleUnit(i);if(u?.dead){announce('This survivor was lost.');return;}if(u?.downed){announce('This survivor needs medical assistance.');return;}}state.selected=i;state.awaitingSite=null;state.panUntil=0;updateHUD();}
 function issueMove(x,y){if(state.combat){if(!battling())return;const result=attemptMove(state.combat,world,`hero-${state.selected}`,{x,y});if(result.ok){syncCombatPositions();announce(result.message);}else announce(result.message);updateHUD();return;}if(state.paused){announce('Resume exploration to move.');return;}if(!canWalk(world,x,y)){announce('Terrain blocked. Choose an open tile.');return;}state.awaitingSite=null;const ok=moveParty(world,squad,state.selected,{x,y});if(!ok&&!(selected().x===x&&selected().y===y))announce('No open route to that tile.');}
-function moveTick(delta){if(state.paused||state.combat||state.combatLost)return;
+function moveTick(delta){if($('helpDialog').open||state.paused||state.combat||state.combatLost)return;
  for(let i=0;i<squad.length;i++){
   const p=squad[i];if(p.dead){p.path=[];continue;}if(!p.path.length){p.renderX=p.x;p.renderY=p.y;continue;}
   const n=p.path[0],occupied=squad.some((other,j)=>j!==i&&other.x===n.x&&other.y===n.y);
@@ -232,11 +239,12 @@ canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),mx=e.
 canvas.addEventListener('wheel',e=>{e.preventDefault();state.zoom=clamp(state.zoom+(e.deltaY<0?.1:-.1),.55,1.6);updateHUD();},{passive:false});
 function pause(){state.paused=!state.paused;updateHUD();announce(state.paused?'Exploration paused.':'Expedition resumed.');}
 window.addEventListener('keydown',e=>{
- if($('helpDialog').open)return;const tag=document.activeElement?.tagName;if(tag==='INPUT'||tag==='TEXTAREA')return;
- const k=e.key.toLowerCase();if([' ','tab','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
- if(k==='tab'){cycleHero();return;}
+ if($('helpDialog').open||e.ctrlKey||e.metaKey||e.altKey)return;const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag)||document.activeElement?.isContentEditable)return;
+ if(tag==='BUTTON'&&['Enter',' '].includes(e.key))return;
+ const k=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
+ if(k==='q'&&!e.repeat){cycleHero();return;}
  if(['1','2','3'].includes(k)){selectHero(Number(k)-1);return;}
- if(state.combat){if(e.repeat)return;if(k==='enter'){endCombatTurn();return;}if(k==='f'){setCombatMode('shoot');return;}if(k==='m'){setCombatMode('move');return;}if(k==='h'){setCombatMode('heal');return;}if(k==='g'){combatAim();return;}if(k==='l'){combatReload();return;}if(k===' '){return;}}
+ if(state.combat){if(e.repeat)return;if(k==='enter'){endCombatTurn();return;}if(k==='f'){setCombatMode('shoot');return;}if(k==='m'){setCombatMode('move');return;}if(k==='h'){setCombatMode('heal');return;}if(k==='g'){combatAim();return;}if(k==='l'){combatReload();return;}if(k===' '||k==='e'){return;}}
  if(k===' '&&!e.repeat){pause();return;}
  if(k==='e'&&!e.repeat){interactNearby();return;}
  if(k==='r'&&!e.repeat){state.panUntil=0;return;}
@@ -245,12 +253,12 @@ window.addEventListener('keydown',e=>{
  held.add(k);
 });
 window.addEventListener('keyup',e=>held.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>held.clear());
-$('switchAction').onclick=cycleHero;
+$('switchAction').onclick=cycleHero;$('combatSwitch').onclick=cycleHero;
 $('investigate').onclick=interactNearby;$('pauseAction').onclick=pause;
 $('walkAction').onclick=()=>announce('Click a reachable tile on the map, or use WASD.');
 $('zoomIn').onclick=()=>{state.zoom=clamp(state.zoom+.1,.55,1.6);updateHUD();};
 $('zoomOut').onclick=()=>{state.zoom=clamp(state.zoom-.1,.55,1.6);updateHUD();};
 $('recenter').onclick=()=>{state.panUntil=0;};
-$('helpBtn').onclick=()=>$('helpDialog').showModal();$('closeHelp').onclick=()=>$('helpDialog').close();
+$('helpBtn').onclick=()=>{held.clear();$('helpDialog').showModal();};$('closeHelp').onclick=()=>$('helpDialog').close();
 for(const [id,handler] of [['combatMove',()=>setCombatMode('move')],['combatShoot',()=>setCombatMode('shoot')],['combatHeal',()=>setCombatMode('heal')],['combatAim',combatAim],['combatReload',combatReload],['combatEnd',endCombatTurn]])$(id).onclick=handler;
 updateHUD();announce('Expedition started. Find the Silent Relay northeast of camp. Watch for raiders.');
