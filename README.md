@@ -17,11 +17,13 @@ Defeat the raiders with weapons, cover, positioning, and medkits. Surviving alli
 
 ## Controls
 
+Use the action buttons or their keyboard shortcuts. Tab / Shift+Tab navigates buttons; Enter or Space activates the focused button. The Controls menu pauses exploration while open. Combat buttons show their AP costs and the prompt above them explains the next click.
+
 ### Exploration
 
 - **Left click** terrain: pathfind and move; click a survivor to select.
 - **WASD / arrows**: move; companions follow.
-- **Tab / 1–3**: change selected survivor.
+- **Q / 1–3**: change selected survivor.
 - **E**: investigate nearby salvage or relay.
 - **Space**: pause/resume real-time exploration.
 - **Mouse wheel / +/-**: zoom; **right-drag**: camera pan; **R**: recenter.
@@ -35,7 +37,7 @@ Defeat the raiders with weapons, cover, positioning, and medkits. Surviving alli
 - **L**: RELOAD (1 AP).
 - **H**: MEDKIT mode, then click yourself or an adjacent ally (2 AP, one kit). Rescues downed allies.
 - **Enter / END TURN**: hand the turn to the raiders. Your surviving allies refresh to 4 AP on the next player round.
-- **Tab / 1–3**: change selected active survivor at any time during your phase.
+- **Q / 1–3**: change selected active survivor at any time during your phase.
 
 Ranged attacks check weapon range, line of sight, nearby cover, and shooter stats. Hover a raider to inspect accuracy. Clicked targets also show a detailed hit estimate in the right-side tactical briefing. Enemies pursue the nearest reachable survivor and attack when they have a valid shot.
 
