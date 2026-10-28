@@ -13,7 +13,7 @@ const squad=[
   {name:'ROOK HAYES',short:'ROOK',role:'ENGINEER',initial:'R',color:'#ba937e',trim:'#47565a',x:9,y:25,hp:72,path:[],moving:false}
 ];
 for(const p of squad){p.renderX=p.x;p.renderY=p.y;p.elapsed=0;}
-const state={selected:0,paused:false,zoom:.91,cam:{x:0,y:0},hover:null,scrap:0,intel:0,panUntil:0,lastKey:0,awaitingSite:null,frame:0,combat:null,combatMode:'shoot',targeted:null,combatCleared:false,combatLost:false,medkits:4};
+const state={selected:0,followSquad:true,paused:false,zoom:.91,cam:{x:0,y:0},hover:null,scrap:0,intel:0,panUntil:0,lastKey:0,awaitingSite:null,frame:0,combat:null,combatMode:'shoot',targeted:null,combatCleared:false,combatLost:false,medkits:4};
 let viewW=800,viewH=650,dpr=1,toastTimer;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const selected=()=>squad[state.selected];
@@ -180,7 +180,12 @@ function updateHUD(){
  $('squadList').querySelectorAll('button').forEach(b=>b.onclick=()=>selectHero(+b.dataset.index));
  $('selectedName').innerHTML=`${selected().name} <span>${selected().role}</span>`;
  $('coordinates').textContent=`GRID ${String(selected().x).padStart(2,'0')},${String(selected().y).padStart(2,'0')}`;
- $('controlHint').textContent=state.paused?'Paused. Select Resume or press Space to continue.':'Click ground to move · Click gold markers to collect · Q / 1–3 selects survivors';
+ $('followAction').setAttribute('aria-pressed',String(state.followSquad));
+ $('followAction').classList.toggle('active',state.followSquad);
+ $('followAction').innerHTML=`<span aria-hidden="true">⇶</span> SQUAD FOLLOW: ${state.followSquad?'ON':'OFF'} <kbd>C</kbd><small>${state.followSquad?'Allies follow when you move':'Others hold position'}</small>`;
+ $('followAction').title='Toggle squad following (C). Applies during exploration only.';
+ $('followAction').disabled=Boolean(state.combat||state.combatLost);
+ $('controlHint').textContent=state.paused?'Paused. Select Resume or press Space to continue.':`${state.followSquad?'Move together':'Move selected survivor only'} · Click ground to move · Gold markers collect · Q / 1–3 selects survivors`;
  $('scrap').textContent=state.scrap;$('intel').textContent=`${state.intel} / 1`;$('medkits').textContent=String(state.combat?.medkits??state.medkits).padStart(2,'0');
  const radio=world.sites.find(s=>s.id==='radio'),salvage=world.sites.filter(s=>s.type==='salvage');const found=Boolean(radio.claimed||radio.seen);
  const flags=[state.combatCleared,found,radio.claimed,salvage.some(s=>s.claimed)];
@@ -192,7 +197,17 @@ function updateHUD(){
  $('zoomLabel').textContent=`${Math.round(state.zoom*100)}%`;
  updateCombatHUD();
 }
-function selectHero(i){if(i<0||i>=squad.length)return;if(state.combat){const u=battleUnit(i);if(u?.dead){announce('This survivor was lost.');return;}if(u?.downed){announce('This survivor needs medical assistance.');return;}}state.selected=i;state.awaitingSite=null;state.panUntil=0;updateHUD();}
+function stopOtherSurvivors(){
+ for(let i=0;i<squad.length;i++)if(i!==state.selected){const p=squad[i];p.path=[];p.elapsed=0;p.renderX=p.x;p.renderY=p.y;}
+}
+function toggleSquadFollow(){
+ if(state.combat||state.combatLost)return;
+ state.followSquad=!state.followSquad;
+ if(!state.followSquad)stopOtherSurvivors();
+ updateHUD();
+ announce(state.followSquad?'Squad follow ON. Allies follow when you move.':'Squad follow OFF. Other survivors hold position; select them to move individually.');
+}
+function selectHero(i){if(i<0||i>=squad.length)return;if(state.combat){const u=battleUnit(i);if(u?.dead){announce('This survivor was lost.');return;}if(u?.downed){announce('This survivor needs medical assistance.');return;}}state.selected=i;if(!state.combat&&!state.followSquad)stopOtherSurvivors();state.awaitingSite=null;state.panUntil=0;updateHUD();}
 function issueMove(x,y){if(state.combat){if(!battling())return;const result=attemptMove(state.combat,world,`hero-${state.selected}`,{x,y});if(result.ok){syncCombatPositions();announce(result.message);}else announce(result.message);updateHUD();return;}if(state.paused){announce('Resume exploration to move.');return;}if(!canWalk(world,x,y)){announce('Terrain blocked. Choose an open tile.');return;}state.awaitingSite=null;const ok=moveParty(world,squad,state.selected,{x,y});if(!ok&&!(selected().x===x&&selected().y===y))announce('No open route to that tile.');}
 function moveTick(delta){if($('helpDialog').open||state.paused||state.combat||state.combatLost)return;
  for(let i=0;i<squad.length;i++){
@@ -202,7 +217,7 @@ function moveTick(delta){if($('helpDialog').open||state.paused||state.combat||st
   p.elapsed+=delta;const fraction=clamp(p.elapsed/195,0,1);
   p.renderX=p.x+(n.x-p.x)*fraction;p.renderY=p.y+(n.y-p.y)*fraction;
   if(fraction>=1){const prev={x:p.x,y:p.y};p.x=n.x;p.y=n.y;p.renderX=p.x;p.renderY=p.y;p.path.shift();p.elapsed=0;
-    if(i===state.selected){for(let j=0;j<squad.length;j++)if(j!==i){const follower=squad[j],distance=Math.abs(follower.x-p.x)+Math.abs(follower.y-p.y);if(!follower.dead&&distance>2&&!follower.path.length)moveParty(world,squad,j,prev);}}
+    if(state.followSquad&&i===state.selected){for(let j=0;j<squad.length;j++)if(j!==i){const follower=squad[j],distance=Math.abs(follower.x-p.x)+Math.abs(follower.y-p.y);if(!follower.dead&&distance>2&&!follower.path.length)moveParty(world,squad,j,prev);}}
     if(i===state.selected){const radio=world.sites.find(s=>s.id==='radio');if(radio&&Math.abs(p.x-radio.x)+Math.abs(p.y-radio.y)<=3)radio.seen=true;}
     if(i===state.selected){maybeStartEncounter();}
     if(!state.combat&&i===state.selected&&state.awaitingSite){const site=world.sites.find(s=>s.id===state.awaitingSite);if(site&&Math.abs(p.x-site.x)+Math.abs(p.y-site.y)<=1)approachSite(site);}
@@ -242,6 +257,7 @@ window.addEventListener('keydown',e=>{
  if($('helpDialog').open||e.ctrlKey||e.metaKey||e.altKey)return;const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag)||document.activeElement?.isContentEditable)return;
  if(tag==='BUTTON'&&['Enter',' '].includes(e.key))return;
  const k=e.key.toLowerCase();if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
+ if(k==='c'&&!e.repeat){toggleSquadFollow();return;}
  if(k==='q'&&!e.repeat){cycleHero();return;}
  if(['1','2','3'].includes(k)){selectHero(Number(k)-1);return;}
  if(state.combat){if(e.repeat)return;if(k==='enter'){endCombatTurn();return;}if(k==='f'){setCombatMode('shoot');return;}if(k==='m'){setCombatMode('move');return;}if(k==='h'){setCombatMode('heal');return;}if(k==='g'){combatAim();return;}if(k==='l'){combatReload();return;}if(k===' '||k==='e'){return;}}
@@ -253,6 +269,7 @@ window.addEventListener('keydown',e=>{
  held.add(k);
 });
 window.addEventListener('keyup',e=>held.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>held.clear());
+$('followAction').onclick=toggleSquadFollow;
 $('switchAction').onclick=cycleHero;$('combatSwitch').onclick=cycleHero;
 $('investigate').onclick=interactNearby;$('pauseAction').onclick=pause;
 $('walkAction').onclick=()=>announce('Click a reachable tile on the map, or use WASD.');

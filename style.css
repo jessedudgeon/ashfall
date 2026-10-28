@@ -29,3 +29,6 @@ button:focus-visible{outline:3px solid #ffe3a1;outline-offset:3px}
 .combat-feedback{font-size:11px;line-height:1.5}.toast{bottom:auto;top:140px}
 @media(max-width:560px){.combat-actions{gap:5px}.actions .action{font-size:10px}.coordinates{display:none}.bottom-title h2{font-size:18px}.control-hint{font-size:11px}.map-controls{top:110px}.control-grid{grid-template-columns:1fr 1.2fr}.help-dialog{padding:18px}}
 @media(max-height:620px){.bottom-ui{max-height:48%;overflow:auto}.combat-banner{top:48px}.map-controls{top:100px}}
+
+/* Keep the squad movement choice easy to find at every width. */
+.actions .follow-action{grid-column:1 / -1;min-height:52px}

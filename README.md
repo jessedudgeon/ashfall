@@ -1,4 +1,4 @@
-# ASHFALL — Exploration & Tactical Combat (0.2.0)
+# ASHFALL — Exploration & Tactical Combat (0.3.0)
 
 A playable, single-player isometric post-apocalyptic browser RPG prototype. **No build step, account, backend, or paid services.** Open through GitHub Pages or a local static web server. Uses Canvas 2D, ES modules, and a deterministic, independently tested tactical simulation engine.
 
@@ -22,7 +22,8 @@ Use the action buttons or their keyboard shortcuts. Tab / Shift+Tab navigates bu
 ### Exploration
 
 - **Left click** terrain: pathfind and move; click a survivor to select.
-- **WASD / arrows**: move; companions follow.
+- **WASD / arrows**: move the selected survivor.
+- **C / Squad Follow**: choose whether companions follow or hold position. Follow starts ON. Turning it OFF immediately stops other survivors, including queued movement. Switch with Q or 1–3 to position survivors individually; the previous survivor stops when you switch. Turn it ON and move to lead the squad again. This applies to all exploration movement, including walking to sites; combat stays individually controlled. The choice lasts for the current session and is retained through combat.
 - **Q / 1–3**: change selected survivor.
 - **E**: investigate nearby salvage or relay.
 - **Space**: pause/resume real-time exploration.
