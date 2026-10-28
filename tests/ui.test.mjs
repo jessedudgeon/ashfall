@@ -42,6 +42,7 @@ test('HUD initializes and explorer can walk from keyboard input',()=>{
 });
 
 test('approaching relay switches interface to combat and allows actions',()=>{
+ $('followAction').onclick();
  const radio=$('poiList').querySelectorAll('button').find(b=>b.dataset.site==='radio');
  assert.ok(radio,'Radio destination should be in the POI list');
  radio.onclick();
@@ -49,6 +50,9 @@ test('approaching relay switches interface to combat and allows actions',()=>{
  for(let i=0;i<170&&$('combatActions').hidden;i++){const cb=nextFrame;cb(t+=120);}
  assert.equal($('combatActions').hidden,false,'Raiders should trigger on approach to the relay');
  assert.match($('roundCounter').textContent,/ROUND 01/);
+ assert.equal($('followAction').disabled,true);
+ window.events.keydown({key:'c',repeat:false,preventDefault(){}});
+ assert.equal($('followAction').getAttribute('aria-pressed'),'false','Combat must not change follow preference');
  assert.equal($('combatReload').disabled,true);
  $('combatMove').onclick();
  assert.match($('controlHint').textContent,/Move: click/);
