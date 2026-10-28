@@ -10,7 +10,7 @@
 <body>
   <div id="app">
     <header class="topbar">
-      <div class="brand"><span class="emblem">✳</span><div><strong>ASHFALL</strong><small>EXPEDITION SYSTEM / MARK I</small></div></div>
+      <div class="brand"><span class="emblem">✳</span><div><strong>ASHFALL</strong><small>EXPEDITION SYSTEM / MARK II</small></div></div>
       <div class="top-meta"><span class="signal"><i></i> SIGNAL CONNECTED</span><span>REGION: <b>THE HEARTLAND</b></span><span>DAY <b>004</b></span><span>SEED <b id="seed">3867</b></span></div>
       <button id="helpBtn" class="help-button" title="Controls and help">? <span>CONTROLS</span></button>
     </header>
@@ -19,20 +19,23 @@
         <div class="section-label"><span>SQUAD STATUS</span><span>03 / 04</span></div>
         <div id="squadList" class="squad-list"></div>
         <div class="section-label lower">EXPEDITION</div>
-        <div class="sidebar-info"><div class="info-row"><span>RATIONS</span><b>12</b></div><div class="info-row"><span>MEDICAL</span><b>04</b></div><div class="info-row"><span>SCRAP</span><b id="scrap">0</b></div><div class="info-row"><span>INTEL</span><b id="intel">0 / 1</b></div></div>
+        <div class="sidebar-info"><div class="info-row"><span>RATIONS</span><b>12</b></div><div class="info-row"><span>MEDICAL</span><b id="medkits">04</b></div><div class="info-row"><span>SCRAP</span><b id="scrap">0</b></div><div class="info-row"><span>INTEL</span><b id="intel">0 / 1</b></div></div>
         <div class="section-label lower">FIELD NOTES</div>
         <div id="log" class="log" aria-live="polite"><p>Expedition initialized. Scout the abandoned highway.</p></div>
-        <div class="left-footer">CAUTION: UNMAPPED TERRITORY<br><span>NO HOSTILES DETECTED</span></div>
+        <div class="left-footer" id="threatStatus">CAUTION: UNMAPPED TERRITORY<br><span>HOSTILE PRESENCE SUSPECTED</span></div>
       </aside>
       <main id="playArea" class="play-area">
         <canvas id="game" aria-label="Interactive isometric wasteland. Click ground to walk or use WASD."></canvas>
         <div class="world-label"><span class="pulsedot"></span> HEARTLAND WILDS <span class="divider-dot">/</span> EXPLORATION</div>
-        <div class="status-tag"><span class="status-icon">◈</span> REAL-TIME <span class="status-separator">·</span> PAUSE <kbd>SPACE</kbd></div>
+        <div class="status-tag" id="modeTag"><span class="status-icon">◈</span> REAL-TIME <span class="status-separator">·</span> PAUSE <kbd>SPACE</kbd></div>
+        <div class="combat-banner" id="combatBanner" hidden><span>⚠ HOSTILES ENGAGED</span><strong id="roundCounter">ROUND 01 · YOUR TURN</strong><small id="combatHint">CLICK A RAIDER TO FIRE</small></div>
         <div id="hoverLabel" class="hover-label" hidden></div>
         <div class="map-controls"><button id="zoomIn" aria-label="Zoom in" title="Zoom in">+</button><span id="zoomLabel">100%</span><button id="zoomOut" aria-label="Zoom out" title="Zoom out">−</button><button id="recenter" aria-label="Recenter on survivor" title="Recenter">◎</button></div>
         <div class="bottom-ui">
           <div class="bottom-title"><div><span class="micro-label">SELECTED SURVIVOR</span><h2 id="selectedName">MARA VOSS <span>SCOUT</span></h2></div><div class="coordinates" id="coordinates">GRID 09,24</div></div>
-          <div class="actions"><button id="walkAction" class="action active"><span>➤</span> MOVE <kbd>1</kbd></button><button id="investigate" class="action"><span>◉</span> INVESTIGATE <kbd>E</kbd></button><button id="switchAction" class="action"><span>⇄</span> SWITCH <kbd>TAB</kbd></button><button id="pauseAction" class="action"><span>Ⅱ</span> PAUSE <kbd>SPACE</kbd></button></div>
+          <div class="actions" id="explorationActions"><button id="walkAction" class="action active"><span>➤</span> MOVE <kbd>1</kbd></button><button id="investigate" class="action"><span>◉</span> INVESTIGATE <kbd>E</kbd></button><button id="switchAction" class="action"><span>⇄</span> SWITCH <kbd>TAB</kbd></button><button id="pauseAction" class="action"><span>Ⅱ</span> PAUSE <kbd>SPACE</kbd></button></div>
+          <div class="actions combat-actions" id="combatActions" hidden><button id="combatMove" class="action"><span>➤</span> MOVE <kbd>M</kbd></button><button id="combatShoot" class="action active"><span>⌖</span> FIRE <kbd>F</kbd></button><button id="combatAim" class="action"><span>◎</span> AIM <kbd>G</kbd></button><button id="combatReload" class="action"><span>↻</span> RELOAD <kbd>L</kbd></button><button id="combatHeal" class="action"><span>✚</span> MEDKIT <kbd>H</kbd></button><button id="combatEnd" class="action end-turn"><span>▸▸</span> END TURN <kbd>↵</kbd></button></div>
+          <div id="combatFeedback" class="combat-feedback" hidden>Select a raider to attack. Selected survivor: 4 AP.</div>
         </div>
       </main>
       <aside class="sidebar right">
@@ -40,16 +43,17 @@
         <div class="mission-kicker">MISSION 001 <span>ACTIVE</span></div>
         <h2 class="mission-title">The Silent Relay</h2>
         <p class="mission-desc">A weak pre-Cascade signal is coming from an abandoned research outpost. Locate its terminal and recover anything useful.</p>
-        <div id="objectives" class="objective-list"><div class="objective"><span class="objective-square"></span><span>Find the Silent Relay</span></div><div class="objective"><span class="objective-square"></span><span>Recover the signal fragment</span></div><div class="objective"><span class="objective-square"></span><span>Scout salvage locations</span></div></div>
+        <div id="objectives" class="objective-list"><div class="objective"><span class="objective-square"></span><span>Clear the raider patrol</span></div><div class="objective"><span class="objective-square"></span><span>Find the Silent Relay</span></div><div class="objective"><span class="objective-square"></span><span>Recover the signal fragment</span></div><div class="objective"><span class="objective-square"></span><span>Scout salvage locations</span></div></div>
         <div class="section-label lower">NEARBY SIGNALS</div>
         <div class="poi-list" id="poiList"></div>
         <div class="section-label lower">TACTICAL BRIEFING</div>
-        <div class="briefing"><p>Move freely across the map. Your squad will follow the selected survivor.</p><p>Approach <b>gold markers</b> and investigate to recover supplies.</p><p class="muted">Combat is not included in this exploration prototype.</p></div>
-        <div class="version">BUILD 0.1.0 <span>PRE-ALPHA · EXPLORATION</span></div>
+        <div class="briefing" id="explorationBriefing"><p>Move freely across the map. Your squad will follow the selected survivor.</p><p>Approach <b>gold markers</b> and investigate to recover supplies.</p><p class="muted">Raider patrols have been reported near the Silent Relay.</p></div>
+        <div class="combat-briefing" id="combatBriefing" hidden><div class="combat-kicker">TACTICAL ENCOUNTER</div><p id="combatTarget">Choose a raider to inspect accuracy and damage.</p><p>Cover reduces hit chance. Aim costs 1 AP; shooting costs 2. Move up to 3 tiles per AP.</p><p class="combat-warn">Incapacitated survivors bleed out after 3 enemy turns. Use a medkit while adjacent to rescue them.</p></div>
+        <div class="version">BUILD 0.2.0 <span>PRE-ALPHA · COMBAT</span></div>
       </aside>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <dialog id="helpDialog" class="help-dialog"><h2>FIELD MANUAL <span>— CONTROLS</span></h2><p>Welcome to the Heartland. Explore the ruins, recover salvage, and find the relay.</p><div class="control-grid"><b>Left click terrain</b><span>Move selected survivor</span><b>Click a survivor</b><span>Select that survivor</span><b>W A S D / arrows</b><span>Walk across the isometric grid</span><b>Tab / 1–3</b><span>Switch survivors</span><b>E</b><span>Investigate nearby marked site</span><b>Space</b><span>Pause / resume</span><b>Mouse wheel / + −</b><span>Zoom camera</span><b>Right-drag</b><span>Pan camera temporarily</span><b>R</b><span>Recenter on selected survivor</span></div><p class="hint">This is an exploration prototype. No combat or campaign saving yet.</p><button id="closeHelp">BACK TO EXPEDITION</button></dialog>
+    <dialog id="helpDialog" class="help-dialog"><h2>FIELD MANUAL <span>— CONTROLS</span></h2><p>Welcome to the Heartland. Explore the ruins, recover salvage, and find the relay.</p><div class="control-grid"><b>Left click terrain</b><span>Move selected survivor</span><b>Click a survivor</b><span>Select that survivor</span><b>W A S D / arrows</b><span>Walk across the isometric grid</span><b>Tab / 1–3</b><span>Switch survivors</span><b>E</b><span>Investigate nearby marked site</span><b>Space</b><span>Pause / resume exploration</span><b>F / M</b><span>Combat: fire / move</span><b>G / L / H</b><span>Combat: aim / reload / medical kit</span><b>Enter</b><span>Combat: end your squad turn</span><b>Mouse wheel / + −</b><span>Zoom camera</span><b>Right-drag</b><span>Pan camera temporarily</span><b>R</b><span>Recenter on selected survivor</span></div><p class="hint">Combat begins when you approach the Silent Relay. Your campaign is not yet saved between sessions.</p><button id="closeHelp">BACK TO EXPEDITION</button></dialog>
   </div>
   <script type="module" src="./game.js"></script>
 </body>

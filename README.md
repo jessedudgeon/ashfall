@@ -1,44 +1,59 @@
-# ASHFALL — Exploration Prototype (0.1.0)
+# ASHFALL — Exploration & Tactical Combat (0.2.0)
 
-A playable, single-player isometric wasteland exploration prototype. No accounts, npm install, backend, or paid services required. The first release uses native Canvas 2D and ES modules for immediate static hosting; the independent simulation can be moved to Phaser/React when tactical combat and complex UI are implemented.
+A playable, single-player isometric post-apocalyptic browser RPG prototype. **No build step, account, backend, or paid services.** Open through GitHub Pages or a local static web server. Uses Canvas 2D, ES modules, and a deterministic, independently tested tactical simulation engine.
 
 ## Play
 
-Serve this directory with any static HTTP server:
+- Live site (when GitHub Pages is enabled): https://jessedudgeon.github.io/ashfall/
+- Local: run `python3 -m http.server 5173`, then open http://localhost:5173/
+- Run automated tests: `npm test` (requires Node.js, no dependencies to install).
+- The `seed` query parameter selects a map: `?seed=3867` (default seed). Combat outcomes are deterministic for a given seed and sequence of actions.
 
-```bash
-python3 -m http.server 5173
-```
+## What to do
 
-Visit http://localhost:5173/ in a browser. `npm test` also runs five deterministic simulation/pathfinding tests (requires Node.js). Opening `index.html` directly as a `file://` URL may fail because browsers restrict JavaScript modules.
+Start at camp with Mara (scout), Eli (medic), and Rook (engineer). Investigate the gold salvage markers, then approach the **Silent Relay** northeast of camp. Two raiders defend the area. When you get close, the game switches from real-time exploration to turn-based tactical combat.
+
+Defeat the raiders with weapons, cover, positioning, and medkits. Surviving allies continue exploring afterward; the relay is then accessible. Combat awards +8 scrap. Downed allies bleed out after **three enemy phases** unless rescued with a medical kit. If your entire squad is incapacitated, the expedition fails and can be restarted. Full persistent saves and more encounters are still upcoming milestones.
 
 ## Controls
 
-- **Left click:** Move to a tile; click a survivor to select them.
-- **WASD / arrow keys:** Move one grid step; companions follow.
-- **Tab or 1–3:** Switch selected survivor.
-- **E:** Investigate a nearby salvage site or the radio terminal.
-- **Space:** Pause/resume.
-- **Mouse wheel / +/-:** Zoom in/out.
-- **Right-drag:** Pan the camera. **R:** Recenter on selected survivor.
+### Exploration
 
-Find the Silent Relay and investigate the two marked salvage sites. The player can explore but there is **no combat, full character creation, or persistent campaign saving yet**.
+- **Left click** terrain: pathfind and move; click a survivor to select.
+- **WASD / arrows**: move; companions follow.
+- **Tab / 1–3**: change selected survivor.
+- **E**: investigate nearby salvage or relay.
+- **Space**: pause/resume real-time exploration.
+- **Mouse wheel / +/-**: zoom; **right-drag**: camera pan; **R**: recenter.
 
-## Publish with GitHub Pages
+### Combat
 
-1. Push these files to the repository's `main` branch.
-2. In **Settings → Pages**, set Source to **Deploy from a branch**, branch `main`, folder `/ (root)`.
-3. Visit `https://jessedudgeon.github.io/ashfall/` after Pages finishes publishing.
-4. Optionally configure a custom domain, `ashfall.dudgeon.io`, and DNS CNAME `ashfall -> jessedudgeon.github.io`.
+- **Click a raider** to shoot with your selected survivor (when FIRE is active).
+- **F**: FIRE mode (2 AP, uses one round of ammunition).
+- **M**: MOVE mode, then click an accessible tile (3 tiles per AP).
+- **G**: AIM (+15% accuracy to next shot, 1 AP).
+- **L**: RELOAD (1 AP).
+- **H**: MEDKIT mode, then click yourself or an adjacent ally (2 AP, one kit). Rescues downed allies.
+- **Enter / END TURN**: hand the turn to the raiders. Your surviving allies refresh to 4 AP on the next player round.
+- **Tab / 1–3**: change selected active survivor at any time during your phase.
 
-## Code layout
+Ranged attacks check weapon range, line of sight, nearby cover, and shooter stats. Hover a raider to inspect accuracy. Clicked targets also show a detailed hit estimate in the right-side tactical briefing. Enemies pursue the nearest reachable survivor and attack when they have a valid shot.
 
-- `index.html`: HUD and browser entry point.
-- `style.css`: responsive retro-futuristic interface.
-- `core.mjs`: deterministic world generation, projection, A* routing, collision helpers.
-- `game.js`: Canvas renderer, controls, interaction, camera, follower behavior.
-- `tests/core.test.mjs`: seed, navigation, obstacle, projection, and occupancy tests.
+## Files
 
-## Next milestone
+- `index.html` — accessible menus and combat/exploration HUD.
+- `style.css` — responsive post-apocalyptic interface.
+- `core.mjs` — deterministic 30×30 world, isometric projection, routing/collisions.
+- `combat.mjs` — tactical rules: action points, cover, LOS, shooting, injury/recovery, AI.
+- `game.js` — Canvas renderer, input handling, combat UI, exploration-to-combat transition.
+- `tests/core.test.mjs` — navigation/world tests.
+- `tests/combat.test.mjs` — combat simulation tests.
+- `tests/ui.test.mjs` — DOM/controller smoke tests with an in-process browser stub.
 
-Tactical encounters: action points, cover, line of sight, target selection, and combat transitions. No server or account infrastructure is required for this milestone.
+## Hosting
+
+Publish the repository's `main` branch `/ (root)` using **Settings → Pages → Deploy from a branch**. Everything uses relative URLs, so deployment at `https://jessedudgeon.github.io/ashfall/` needs no separate build configuration. `index.html` cannot reliably be opened with `file://` because browsers restrict ES-module imports.
+
+## Known prototype limitations
+
+This is a tactical vertical slice, not the complete RPG: there is one encounter, generated terrain is still primarily decorative, characters have fixed starting weapons/abilities, enemies execute their turn instantly, battle animations are placeholders, saves are not persistent, and the game has no larger quest/settlement progression yet. Combat rules and UI have automated tests; a Chromium visual playthrough can be performed after deployment.

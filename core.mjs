@@ -93,7 +93,8 @@ export function nearestOpen(world, target, occupied=new Set(), maxRadius=8){
   return null;
 }
 export function moveParty(world,party,index,destination){
-  const hero=party[index],occupied=new Set(party.filter((_,i)=>i!==index).map(p=>key(p.x,p.y)));
+  const hero=party[index];if(!hero||hero.dead)return false;
+  const occupied=new Set(party.filter((p,i)=>i!==index&&!p.dead).map(p=>key(p.x,p.y)));
   const target=nearestOpen(world,destination,occupied);
   if(!target)return false;
   const path=findPath(world,hero,target,occupied);
